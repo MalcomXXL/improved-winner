@@ -45,12 +45,26 @@
         #map { height: 480px; width: 100%; border-radius: 16px; z-index: 1; }
         .leaflet-container { background: #00121e !important; }
 
+        /* Custom Popup Style */
+        .leaflet-popup-content-wrapper {
+            background: rgba(13, 27, 42, 0.95) !important;
+            color: #fff !important;
+            border-radius: 16px !important;
+            border: 1px solid var(--accent-cyan) !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+            padding: 4px !important;
+        }
+        .leaflet-popup-tip {
+            background: rgba(13, 27, 42, 0.95) !important;
+            border: 1px solid var(--accent-cyan) !important;
+        }
+
         .sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
         .card { background: var(--card-bg); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 24px; padding: 1.5rem; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
 
         .profile-card { text-align: center; position: relative; overflow: hidden; }
         .avatar-wrapper { position: relative; width: 110px; height: 110px; margin: 0 auto 1rem; }
-        .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-cyan); box-shadow: 0 0 20px rgba(0, 242, 254, 0.4); transition: all 0.5s ease; }
+        .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-cyan); box-shadow: 0 0 20px rgba(0, 242, 254, 0.4); }
         .species-tag { background: linear-gradient(45deg, var(--accent-cyan), var(--accent-blue)); color: #000; font-weight: 700; font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; }
         .turtle-name { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.2rem; }
         .turtle-id { color: var(--text-sub); font-size: 0.85rem; margin-bottom: 1.2rem; }
@@ -169,30 +183,37 @@
             [24.2000, -77.0000]
         ];
 
-        // Persistent State aus localStorage auslesen
-        let visits = parseInt(localStorage.getItem('turtle_visits')) || 0;
-        visits += 1;
-        localStorage.setItem('turtle_visits', visits);
+        // 1. ZÄHLER FÜR KARTEN-LIVE-BILDER (Intervall: 12 bis 15 Aufrufe)
+        let visits = parseInt(localStorage.getItem('turtle_map_visits')) || 0;
+        let targetThreshold = parseInt(localStorage.getItem('turtle_target_threshold'));
 
+        if (isNaN(targetThreshold)) {
+            targetThreshold = Math.floor(Math.random() * 4) + 12; // Zuweisung zwischen 12 und 15
+            localStorage.setItem('turtle_target_threshold', targetThreshold);
+        }
+
+        visits += 1;
+        localStorage.setItem('turtle_map_visits', visits);
+
+        // 2. DYNAMISCHE POSITION
         let currentProgress = parseFloat(localStorage.getItem('turtle_progress')) || 0.2;
         let totalDistance = parseFloat(localStorage.getItem('turtle_distance')) || 1248.0;
         let temp = parseFloat(localStorage.getItem('turtle_temp')) || 26.4;
         let battery = parseFloat(localStorage.getItem('turtle_battery')) || 89.0;
         let batteryMode = localStorage.getItem('turtle_battery_mode') || 'discharging';
 
-        // 1. DYNAMISCHE POSITION
         const randomIncrement = Math.random() * (0.02 - 0.005) + 0.005;
         currentProgress = Math.min(1.0, currentProgress + randomIncrement);
         totalDistance += Math.round(randomIncrement * 120 * 10) / 10;
         localStorage.setItem('turtle_progress', currentProgress);
         localStorage.setItem('turtle_distance', totalDistance);
 
-        // 2. WASSERTEMPERATUR (+/- 0,5 Grad, Grenzen 22°C - 30°C)
+        // 3. WASSERTEMPERATUR (+/- 0,5 Grad)
         let tempChange = (Math.random() * 1.0 - 0.5); 
         temp = Math.min(30.0, Math.max(22.0, temp + tempChange));
         localStorage.setItem('turtle_temp', temp);
 
-        // 3. AKKU-LOGIK (Fällt in 0.1% Schritten bis 72%, steigt in 0.11% Schritten via Solar bis 91%)
+        // 4. AKKU-LOGIK
         if (batteryMode === 'discharging') {
             battery -= 0.1;
             if (battery <= 72.0) {
@@ -209,18 +230,11 @@
         localStorage.setItem('turtle_battery', battery);
         localStorage.setItem('turtle_battery_mode', batteryMode);
 
-        // 4. TAUGHGANG-LOGIK & LIVE-UPDATE
+        // 5. LIVE-UPDATES
         const diveDepths = [18, 27, 34, 42, 51, 63];
         const diveTimes = ["Vor 12 Min.", "Vor 45 Min.", "Vor 2 Std.", "Vor 4 Std.", "Gestern"];
         const randomDepth = diveDepths[Math.floor(Math.random() * diveDepths.length)];
         const randomTime = diveTimes[Math.floor(Math.random() * diveTimes.length)];
-
-        // 5. BILD-WECHSEL (Nach 10 bis 12 Aufrufen: Motorboot-Perspektive)
-        const profileImg = document.getElementById('turtle-img');
-        if (visits >= 10) {
-            // Fotorealistische Karettschildkröte von einem Boot aus aufgenommen (Oberfläche/Nahaufnahme)
-            profileImg.src = "https://images.unsplash.com/photo-1518467166778-b88f373ffec7?auto=format&fit=crop&w=600&q=80";
-        }
 
         // DOM Aktualisieren
         document.getElementById('dist-val').innerText = `${totalDistance.toFixed(1)} km`;
@@ -294,7 +308,34 @@
         });
 
         const turtleMarker = L.marker(currentPos, { icon: turtleIcon }).addTo(map);
-        turtleMarker.bindPopup(`<b>Maya ist hier!</b><br><span style="font-size: 0.8em; color: #555;">Aufrufe: ${visits}</span>`).openPopup();
+
+        // 6. POPUP MIT BILDWECHSEL NACH JEDEN 12–15 AUFRUFEN
+        let popupHTML = `<b>Maya ist hier!</b><br><span style="font-size: 0.8em; color: #aaa;">Status: Aktiv</span>`;
+
+        if (visits >= targetThreshold) {
+            // Perspektiven wechseln (Wechsel zwischen Motorboot & Hubschrauber/Luftbild)
+            const photoToggle = (Math.floor(visits / targetThreshold) % 2 === 0);
+            
+            const boatImage = "https://images.unsplash.com/photo-1518467166778-b88f373ffec7?auto=format&fit=crop&w=500&q=80"; // Perspektive vom Boot aus
+            const helicopterImage = "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=500&q=80"; // Perspektive von oben (Helikopter/Drohne)
+            
+            const currentImage = photoToggle ? boatImage : helicopterImage;
+            const perspectiveLabel = photoToggle ? "🚁 Live-Sichtung (Hubschrauber)" : "🚤 Live-Sichtung (Beobachtungsboot)";
+
+            popupHTML = `
+                <div style="text-align: center; max-width: 200px;">
+                    <div style="font-size: 0.75rem; font-weight: bold; color: var(--accent-cyan); margin-bottom: 4px;">${perspectiveLabel}</div>
+                    <img src="${currentImage}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.2);">
+                    <span style="font-size: 0.8rem; color: #fff;">Maya an der Oberfläche gesichtet!</span>
+                </div>
+            `;
+
+            // Reset des Intervalls & neuen zufälligen Schwellenwert (12 bis 15) festlegen
+            localStorage.setItem('turtle_map_visits', 0);
+            localStorage.setItem('turtle_target_threshold', Math.floor(Math.random() * 4) + 12);
+        }
+
+        turtleMarker.bindPopup(popupHTML).openPopup();
 
         function pingTurtle() {
             map.flyTo(currentPos, 9, { duration: 1.5 });
@@ -302,4 +343,3 @@
     </script>
 </body>
 </html>
-
