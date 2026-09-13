@@ -309,19 +309,35 @@
 
         const turtleMarker = L.marker(currentPos, { icon: turtleIcon }).addTo(map);
 
-        // 6. POPUP MIT BILDWECHSEL NACH JEDEN 12–15 AUFRUFEN
-        let popupHTML = `<b>Maya ist hier!</b><br><span style="font-size: 0.8em; color: #aaa;">Status: Aktiv</span>`;
-
-        if (visits >= targetThreshold) {
-            // Perspektiven wechseln (Wechsel zwischen Wasser & Hubschrauber/Luftbild)
-            const photoToggle = (Math.floor(visits / targetThreshold) % 2 === 0);
+if (visits >= targetThreshold) {
+            // 1. Wechsel-Zähler aus dem localStorage holen (oder mit 0 starten)
+            let toggleCount = parseInt(localStorage.getItem('turtle_toggle_count') || '0');
+    
+            // Den Index für 6 Bilder ermitteln (Modulo 6, ergibt Werte von 0 bis 5)
+            const imageIndex = toggleCount % 6;
             
-            // KORREKTUR: Direkte Bild-URLs verwenden, die auf Parameter reagieren können
-            const boatImage = "https://unsplash.com"; // Meeresschildkröte mit Tauchern
-            const helicopterImage = "https://unsplash.com"; // Schildkröte von oben im Ozean
+            // 6 verschiedene Bild-URLs definieren
+            const images = [
+                "https://images.unsplash.com/photo-1723567018208-2ff260dad75c?w=400", // Bild 0: Tauchgang
+                "https://images.unsplash.com/photo-1504740191045-63e15251e750?w=400", // Bild 1: Ozean/Luftperspektive
+                "https://images.unsplash.com/photo-1778343214717-8908ad422034?w=400", // Bild 2: Unterwasser
+                "https://images.unsplash.com/photo-1642618979413-a36a7e25e1e3?w=400", // Bild 3: Meeresschildkröte nah
+                "https://images.unsplash.com/photo-1678017055714-d645b4780b8c?w=400", // Bild 4: Tauchgang2
+                "https://images.unsplash.com/photo-1633130264107-ddc97325d805?w=400"  // Bild 5: Ozean/Luftperspektive2
+            ];
 
-            const currentImage = photoToggle ? boatImage : helicopterImage;
-            const perspectiveLabel = photoToggle ? "Live-Sichtung" : "Live-Sichtung (Tauchgang)";
+            // Passende Labels für jedes der 6 Bilder (können beliebig angepasst werden)
+            const labels = [
+                "Live-Sichtung (Tauchgang)",
+                "Live-Sichtung (Ozean)",
+                "Live-Sichtung (Unterwasser)",
+                "Live-Sichtung (Nahaufnahme)",
+                "Live-Sichtung (Tauchgang)",
+                "Live-Sichtung (Ozean)"
+            ];
+
+            const currentImage = images[imageIndex];
+            const perspectiveLabel = labels[imageIndex];
 
             popupHTML = `
                 <div style="text-align: center; max-width: 200px;">
@@ -330,6 +346,9 @@
                     <span style="font-size: 0.8rem; color: #fff;">Maya gesichtet!</span>
                 </div>
             `;
+
+            // 2. Toggle-Zähler für das nächste Mal erhöhen
+            localStorage.setItem('turtle_toggle_count', toggleCount + 1);
 
             // Reset des Intervalls & neuen zufälligen Schwellenwert (12 bis 15) festlegen
             localStorage.setItem('turtle_map_visits', 0);
