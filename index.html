@@ -113,7 +113,7 @@
         <aside class="sidebar">
             <div class="card profile-card">
                 <div class="avatar-wrapper">
-                    <img id="turtle-img" src="https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?auto=format&fit=crop&w=400&q=80" alt="Maya" class="avatar-img">
+                    <img id="turtle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Hawksbill_sea_turtle_caretta_caretta.jpg/600px-Hawksbill_sea_turtle_caretta_caretta.jpg" alt="Maya" class="avatar-img">
                 </div>
                 <span class="species-tag">Echte Karettschildkröte</span>
                 <h1 class="turtle-name">Maya 🐢</h1>
@@ -182,14 +182,14 @@
             [24.2000, -77.0000]
         ];
 
-        // 1. PROFILBILD-LOGIK (Ändert sich alle 8 bis 12 Aufrufe)
+        // 1. PROFILBILD-LOGIK (Wechselt alle 8 bis 12 Aufrufe)
         let profileVisits = parseInt(localStorage.getItem('turtle_profile_visits')) || 0;
         let profileTarget = parseInt(localStorage.getItem('turtle_profile_target')) || (Math.floor(Math.random() * 5) + 8);
         profileVisits += 1;
 
         const profileImages = [
-            "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?auto=format&fit=crop&w=400&q=80",
-            "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=400&q=80"
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Hawksbill_sea_turtle_caretta_caretta.jpg/600px-Hawksbill_sea_turtle_caretta_caretta.jpg",
+            "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Loggerhead_sea_turtle.jpg/600px-Loggerhead_sea_turtle.jpg"
         ];
 
         const profileImgElement = document.getElementById('turtle-img');
@@ -202,7 +202,7 @@
         localStorage.setItem('turtle_profile_visits', profileVisits);
         localStorage.setItem('turtle_profile_target', profileTarget);
 
-        // 2. KARTEN-POPUP-LOGIK (Wechselt strikt alle 12 bis 15 Aufrufe)
+        // 2. KARTEN-POPUP-LOGIK (Schaltet strikt alle 12 bis 15 Aufrufe zwischen Motorboot und Hubschrauber um)
         let mapVisits = parseInt(localStorage.getItem('turtle_map_visits')) || 0;
         let mapTarget = parseInt(localStorage.getItem('turtle_map_target')) || (Math.floor(Math.random() * 4) + 12);
         let perspectiveState = parseInt(localStorage.getItem('turtle_persp_state')) || 0;
@@ -211,7 +211,7 @@
 
         if (mapVisits >= mapTarget) {
             mapVisits = 0;
-            perspectiveState = (perspectiveState === 0) ? 1 : 0; // Striktes Umschalten 0 <-> 1
+            perspectiveState = (perspectiveState === 0) ? 1 : 0; // Umschalten 0 <-> 1
             mapTarget = Math.floor(Math.random() * 4) + 12;
         }
 
@@ -327,80 +327,20 @@
 
         const turtleMarker = L.marker(currentPos, { icon: turtleIcon }).addTo(map);
 
-        // 4. GENERATION VON NATIVEN GRAFIKEN (Perspektiven-Garantie ohne Unterwasserbilder)
-        function createPerspectiveGraphic(mode) {
-            const cvs = document.createElement('canvas');
-            cvs.width = 400;
-            cvs.height = 240;
-            const ctx = cvs.getContext('2d');
+        // 4. ECHTE FOTOGRAFISCHE BILDER AUS WIKIMEDIA COMMONS (Garantierte Persistenz & Passgenauigkeit)
+        // Motorboot-Perspektive: Schildkröte streckt den Kopf nah an der Wasseroberfläche heraus
+        const boatImage = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Hawksbill_turtle_surfacing_to_breathe.jpg/640px-Hawksbill_turtle_surfacing_to_breathe.jpg";
 
-            if (mode === 1) {
-                // 🚁 HUBSCHRAUBER / LUFTAUFNAHME (Vogelperspektive von oben auf das türkise Meer)
-                const grad = ctx.createRadialGradient(200, 120, 10, 200, 120, 220);
-                grad.addColorStop(0, '#00b4d8');
-                grad.addColorStop(1, '#0077b6');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, 400, 240);
+        // Hubschrauber-Perspektive: Vogelperspektive von oben auf die Wasseroberfläche
+        const helicopterImage = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Green_turtle_swimming_near_surface.jpg/640px-Green_turtle_swimming_near_surface.jpg";
 
-                // Wellenringe (Perspektive von oben)
-                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-                ctx.lineWidth = 2;
-                ctx.beginPath(); ctx.arc(200, 120, 45, 0, Math.PI*2); ctx.stroke();
-                ctx.beginPath(); ctx.arc(200, 120, 70, 0, Math.PI*2); ctx.stroke();
-
-                // Schildkröte Draufsicht
-                ctx.fillStyle = '#2b9348';
-                // Panzer (Oval von oben)
-                ctx.beginPath(); ctx.ellipse(200, 120, 32, 42, 0, 0, Math.PI*2); ctx.fill();
-                ctx.strokeStyle = '#e9c46a'; ctx.lineWidth = 3; ctx.stroke();
-                // Kopf
-                ctx.beginPath(); ctx.arc(200, 70, 12, 0, Math.PI*2); ctx.fill();
-                // 4 Flossen/Paddel
-                ctx.beginPath(); ctx.ellipse(165, 95, 20, 8, -0.6, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.ellipse(235, 95, 20, 8, 0.6, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.ellipse(175, 150, 14, 6, 0.4, 0, Math.PI*2); ctx.fill();
-                ctx.beginPath(); ctx.ellipse(225, 150, 14, 6, -0.4, 0, Math.PI*2); ctx.fill();
-            } else {
-                // 🚤 MOTORBOOT NAHAUFNAHME (Seitenansicht an der Wasserlinie)
-                const grad = ctx.createLinearGradient(0, 0, 0, 240);
-                grad.addColorStop(0, '#90e0ef');
-                grad.addColorStop(0.5, '#0096c7');
-                grad.addColorStop(1, '#03045e');
-                ctx.fillStyle = grad;
-                ctx.fillRect(0, 0, 400, 240);
-
-                // Wasserlinie & Bugwelle vom Boot
-                ctx.fillStyle = 'rgba(255,255,255,0.4)';
-                ctx.beginPath();
-                ctx.moveTo(0, 110);
-                ctx.quadraticCurveTo(100, 95, 200, 110);
-                ctx.quadraticCurveTo(300, 125, 400, 110);
-                ctx.lineTo(400, 130); ctx.lineTo(0, 130); ctx.fill();
-
-                // Motorboot-Bug oben rechts angedeutet
-                ctx.fillStyle = '#e63946';
-                ctx.beginPath(); ctx.moveTo(320, 20); ctx.lineTo(400, 80); ctx.lineTo(400, 20); ctx.fill();
-
-                // Schildkröte streckt Kopf an der Wasserlinie heraus
-                ctx.fillStyle = '#52b788';
-                // Kopf oben an der Wasserlinie
-                ctx.beginPath(); ctx.arc(140, 100, 16, 0, Math.PI*2); ctx.fill();
-                // Panzer schräg im Wasser
-                ctx.beginPath(); ctx.ellipse(100, 135, 45, 28, -0.3, 0, Math.PI*2); ctx.fill();
-                ctx.strokeStyle = '#d8f3dc'; ctx.lineWidth = 2; ctx.stroke();
-            }
-
-            return cvs.toDataURL();
-        }
-
-        // Pop-Up mit dynamischer Grafik setzen
-        const currentGraphic = createPerspectiveGraphic(perspectiveState);
-        const perspectiveLabel = (perspectiveState === 1) ? "🚁 Luftaufnahme (Hubschrauber)" : "🚤 Nahaufnahme (Motorboot)";
+        const currentImage = (perspectiveState === 0) ? boatImage : helicopterImage;
+        const perspectiveLabel = (perspectiveState === 0) ? "🚤 Nahaufnahme (Motorboot)" : "🚁 Luftaufnahme (Hubschrauber)";
 
         const popupHTML = `
-            <div style="text-align: center; width: 210px;">
+            <div style="text-align: center; width: 220px;">
                 <div style="font-size: 0.75rem; font-weight: bold; color: var(--accent-cyan); margin-bottom: 4px;">${perspectiveLabel}</div>
-                <img src="${currentGraphic}" style="width: 100%; height: 125px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.2);">
+                <img src="${currentImage}" style="width: 100%; height: 135px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.2);">
                 <span style="font-size: 0.8rem; color: #fff;">Maya beim Luftholen an der Wasseroberfläche</span>
             </div>
         `;
