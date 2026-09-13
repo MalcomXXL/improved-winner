@@ -45,13 +45,14 @@
         #map { height: 480px; width: 100%; border-radius: 16px; z-index: 1; }
         .leaflet-container { background: #00121e !important; }
 
+        /* Custom Popup Style */
         .leaflet-popup-content-wrapper {
             background: rgba(13, 27, 42, 0.95) !important;
             color: #fff !important;
             border-radius: 16px !important;
             border: 1px solid var(--accent-cyan) !important;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
-            padding: 6px !important;
+            padding: 4px !important;
         }
         .leaflet-popup-tip {
             background: rgba(13, 27, 42, 0.95) !important;
@@ -63,7 +64,7 @@
 
         .profile-card { text-align: center; position: relative; overflow: hidden; }
         .avatar-wrapper { position: relative; width: 110px; height: 110px; margin: 0 auto 1rem; }
-        .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-cyan); box-shadow: 0 0 20px rgba(0, 242, 254, 0.4); transition: all 0.5s ease; }
+        .avatar-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent-cyan); box-shadow: 0 0 20px rgba(0, 242, 254, 0.4); }
         .species-tag { background: linear-gradient(45deg, var(--accent-cyan), var(--accent-blue)); color: #000; font-weight: 700; font-size: 0.75rem; padding: 4px 12px; border-radius: 20px; display: inline-block; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 1px; }
         .turtle-name { font-size: 1.8rem; font-weight: 800; margin-bottom: 0.2rem; }
         .turtle-id { color: var(--text-sub); font-size: 0.85rem; margin-bottom: 1.2rem; }
@@ -113,7 +114,7 @@
         <aside class="sidebar">
             <div class="card profile-card">
                 <div class="avatar-wrapper">
-                    <img id="turtle-img" src="https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Hawksbill_sea_turtle_caretta_caretta.jpg/600px-Hawksbill_sea_turtle_caretta_caretta.jpg" alt="Maya" class="avatar-img">
+                    <img id="turtle-img" src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=400&q=80" alt="Maya" class="avatar-img">
                 </div>
                 <span class="species-tag">Echte Karettschildkröte</span>
                 <h1 class="turtle-name">Maya 🐢</h1>
@@ -182,44 +183,19 @@
             [24.2000, -77.0000]
         ];
 
-        // 1. PROFILBILD-LOGIK (Wechselt alle 8 bis 12 Aufrufe)
-        let profileVisits = parseInt(localStorage.getItem('turtle_profile_visits')) || 0;
-        let profileTarget = parseInt(localStorage.getItem('turtle_profile_target')) || (Math.floor(Math.random() * 5) + 8);
-        profileVisits += 1;
+        // 1. ZÄHLER FÜR KARTEN-LIVE-BILDER (Intervall: 12 bis 15 Aufrufe)
+        let visits = parseInt(localStorage.getItem('turtle_map_visits')) || 0;
+        let targetThreshold = parseInt(localStorage.getItem('turtle_target_threshold'));
 
-        const profileImages = [
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Hawksbill_sea_turtle_caretta_caretta.jpg/600px-Hawksbill_sea_turtle_caretta_caretta.jpg",
-            "https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Loggerhead_sea_turtle.jpg/600px-Loggerhead_sea_turtle.jpg"
-        ];
-
-        const profileImgElement = document.getElementById('turtle-img');
-        if (profileVisits >= profileTarget) {
-            const nextImgIndex = profileVisits % profileImages.length;
-            profileImgElement.src = profileImages[nextImgIndex];
-            profileVisits = 0;
-            profileTarget = Math.floor(Math.random() * 5) + 8;
-        }
-        localStorage.setItem('turtle_profile_visits', profileVisits);
-        localStorage.setItem('turtle_profile_target', profileTarget);
-
-        // 2. KARTEN-POPUP-LOGIK (Schaltet strikt alle 12 bis 15 Aufrufe zwischen Motorboot und Hubschrauber um)
-        let mapVisits = parseInt(localStorage.getItem('turtle_map_visits')) || 0;
-        let mapTarget = parseInt(localStorage.getItem('turtle_map_target')) || (Math.floor(Math.random() * 4) + 12);
-        let perspectiveState = parseInt(localStorage.getItem('turtle_persp_state')) || 0;
-
-        mapVisits += 1;
-
-        if (mapVisits >= mapTarget) {
-            mapVisits = 0;
-            perspectiveState = (perspectiveState === 0) ? 1 : 0; // Umschalten 0 <-> 1
-            mapTarget = Math.floor(Math.random() * 4) + 12;
+        if (isNaN(targetThreshold)) {
+            targetThreshold = Math.floor(Math.random() * 4) + 12; // Zuweisung zwischen 12 und 15
+            localStorage.setItem('turtle_target_threshold', targetThreshold);
         }
 
-        localStorage.setItem('turtle_map_visits', mapVisits);
-        localStorage.setItem('turtle_map_target', mapTarget);
-        localStorage.setItem('turtle_persp_state', perspectiveState);
+        visits += 1;
+        localStorage.setItem('turtle_map_visits', visits);
 
-        // 3. DYNAMISCHE METRIKEN & ROUTE
+        // 2. DYNAMISCHE POSITION
         let currentProgress = parseFloat(localStorage.getItem('turtle_progress')) || 0.2;
         let totalDistance = parseFloat(localStorage.getItem('turtle_distance')) || 1248.0;
         let temp = parseFloat(localStorage.getItem('turtle_temp')) || 26.4;
@@ -232,29 +208,35 @@
         localStorage.setItem('turtle_progress', currentProgress);
         localStorage.setItem('turtle_distance', totalDistance);
 
-        // Wassertemperatur (+/- 0,5°C)
+        // 3. WASSERTEMPERATUR (+/- 0,5 Grad)
         let tempChange = (Math.random() * 1.0 - 0.5); 
         temp = Math.min(30.0, Math.max(22.0, temp + tempChange));
         localStorage.setItem('turtle_temp', temp);
 
-        // Akku-Verhalten
+        // 4. AKKU-LOGIK
         if (batteryMode === 'discharging') {
             battery -= 0.1;
-            if (battery <= 72.0) { battery = 72.0; batteryMode = 'charging'; }
+            if (battery <= 72.0) {
+                battery = 72.0;
+                batteryMode = 'charging';
+            }
         } else {
             battery += 0.11;
-            if (battery >= 91.0) { battery = 91.0; batteryMode = 'discharging'; }
+            if (battery >= 91.0) {
+                battery = 91.0;
+                batteryMode = 'discharging';
+            }
         }
         localStorage.setItem('turtle_battery', battery);
         localStorage.setItem('turtle_battery_mode', batteryMode);
 
-        // Live-Update Inhalte
+        // 5. LIVE-UPDATES
         const diveDepths = [18, 27, 34, 42, 51, 63];
         const diveTimes = ["Vor 12 Min.", "Vor 45 Min.", "Vor 2 Std.", "Vor 4 Std.", "Gestern"];
         const randomDepth = diveDepths[Math.floor(Math.random() * diveDepths.length)];
         const randomTime = diveTimes[Math.floor(Math.random() * diveTimes.length)];
 
-        // DOM Aktualisierung
+        // DOM Aktualisieren
         document.getElementById('dist-val').innerText = `${totalDistance.toFixed(1)} km`;
         document.getElementById('temp-val').innerText = `${temp.toFixed(1)} °C`;
         document.getElementById('battery-val').innerText = `${battery.toFixed(2)}%`;
@@ -327,23 +309,32 @@
 
         const turtleMarker = L.marker(currentPos, { icon: turtleIcon }).addTo(map);
 
-        // 4. ECHTE FOTOGRAFISCHE BILDER AUS WIKIMEDIA COMMONS (Garantierte Persistenz & Passgenauigkeit)
-        // Motorboot-Perspektive: Schildkröte streckt den Kopf nah an der Wasseroberfläche heraus
-        const boatImage = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Hawksbill_turtle_surfacing_to_breathe.jpg/640px-Hawksbill_turtle_surfacing_to_breathe.jpg";
+        // 6. POPUP MIT BILDWECHSEL NACH JEDEN 12–15 AUFRUFEN
+        let popupHTML = `<b>Maya ist hier!</b><br><span style="font-size: 0.8em; color: #aaa;">Status: Aktiv</span>`;
 
-        // Hubschrauber-Perspektive: Vogelperspektive von oben auf die Wasseroberfläche
-        const helicopterImage = "https://upload.wikimedia.org/wikipedia/commons/thumb/3/30/Green_turtle_swimming_near_surface.jpg/640px-Green_turtle_swimming_near_surface.jpg";
+        if (visits >= targetThreshold) {
+            // Perspektiven wechseln (Wechsel zwischen Wasser & Hubschrauber/Luftbild)
+            const photoToggle = (Math.floor(visits / targetThreshold) % 2 === 0);
+            
+            const boatImage = "https://www.stiftung-meeresschutz.org/wp-content/uploads/projekte-tierarten/meeresschildkroeten/karettschildkroeten/echte-karettschildkroete-mit-tauchern-pexels-leonardo-lamas-25-400x267px.jpg"; // Perspektive vom Boot aus
+            const helicopterImage = "https://stockcake.com/de/i/schildkr%C3%B6te-im-ozean_1467993_592532"; // Perspektive von oben (Helikopter/Drohne)
+            const baotImage2 = "https://www.stiftung-meeresschutz.org/wp-content/uploads/projekte-tierarten/meeresschildkroeten/karettschildkroeten/freilassung-einer-besenderten-unechten-karettschildkroete-barbara-schroeder-noaa-60-400x267px.jpg"
+            
+            const currentImage = photoToggle ? boatImage : helicopterImage;
+            const perspectiveLabel = photoToggle ? "Live-Sichtung" : "Live-Sichtung (Tauchgang)";
 
-        const currentImage = (perspectiveState === 0) ? boatImage : helicopterImage;
-        const perspectiveLabel = (perspectiveState === 0) ? "🚤 Nahaufnahme (Motorboot)" : "🚁 Luftaufnahme (Hubschrauber)";
+            popupHTML = `
+                <div style="text-align: center; max-width: 200px;">
+                    <div style="font-size: 0.75rem; font-weight: bold; color: var(--accent-cyan); margin-bottom: 4px;">${perspectiveLabel}</div>
+                    <img src="${currentImage}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.2);">
+                    <span style="font-size: 0.8rem; color: #fff;">Maya gesichtet!</span>
+                </div>
+            `;
 
-        const popupHTML = `
-            <div style="text-align: center; width: 220px;">
-                <div style="font-size: 0.75rem; font-weight: bold; color: var(--accent-cyan); margin-bottom: 4px;">${perspectiveLabel}</div>
-                <img src="${currentImage}" style="width: 100%; height: 135px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.2);">
-                <span style="font-size: 0.8rem; color: #fff;">Maya beim Luftholen an der Wasseroberfläche</span>
-            </div>
-        `;
+            // Reset des Intervalls & neuen zufälligen Schwellenwert (12 bis 15) festlegen
+            localStorage.setItem('turtle_map_visits', 0);
+            localStorage.setItem('turtle_target_threshold', Math.floor(Math.random() * 4) + 12);
+        }
 
         turtleMarker.bindPopup(popupHTML).openPopup();
 
