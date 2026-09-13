@@ -51,7 +51,7 @@
             border-radius: 16px !important;
             border: 1px solid var(--accent-cyan) !important;
             box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
-            padding: 4px !important;
+            padding: 6px !important;
         }
         .leaflet-popup-tip {
             background: rgba(13, 27, 42, 0.95) !important;
@@ -182,17 +182,22 @@
             [24.2000, -77.0000]
         ];
 
-        // 1. PROFILBILD-LOGIK (Wechselt nach 8 bis 12 Aufrufen)
+        // 1. PROFILBILD-LOGIK (Ändert sich alle 8 bis 12 Aufrufe)
         let profileVisits = parseInt(localStorage.getItem('turtle_profile_visits')) || 0;
         let profileTarget = parseInt(localStorage.getItem('turtle_profile_target')) || (Math.floor(Math.random() * 5) + 8);
         profileVisits += 1;
 
+        const profileImages = [
+            "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?auto=format&fit=crop&w=400&q=80",
+            "https://images.unsplash.com/photo-1591025207163-942350e47db2?auto=format&fit=crop&w=400&q=80"
+        ];
+
         const profileImgElement = document.getElementById('turtle-img');
         if (profileVisits >= profileTarget) {
-            // Neues Profilbild laden
-            profileImgElement.src = "https://images.unsplash.com/photo-1518467166778-b88f373ffec7?auto=format&fit=crop&w=400&q=80";
+            const nextImgIndex = Math.floor(Math.random() * profileImages.length);
+            profileImgElement.src = profileImages[nextImgIndex];
             profileVisits = 0;
-            profileTarget = Math.floor(Math.random() * 5) + 8; // Neuer Zielwert (8 bis 12)
+            profileTarget = Math.floor(Math.random() * 5) + 8;
         }
         localStorage.setItem('turtle_profile_visits', profileVisits);
         localStorage.setItem('turtle_profile_target', profileTarget);
@@ -312,25 +317,26 @@
 
         const turtleMarker = L.marker(currentPos, { icon: turtleIcon }).addTo(map);
 
-        // POPUP MIT DYNAMISCHER WASSEROBERFLÄCHEN-PERSPEKTIVE (Motorboot vs. Hubschrauber)
+        // POPUP MIT GEPRÜFTEN BILDERN DER WASSEROBERFLÄCHE
         let popupHTML = `<b>Maya ist hier!</b><br><span style="font-size: 0.8em; color: #aaa;">Status: Aktiv an der Oberfläche</span>`;
 
         if (mapVisits >= mapTarget) {
-            // Echte Oberflächen-Fotos (0 = Motorboot Nahaufnahme, 1 = Hubschrauber Luftaufnahme von oben)
+            // Wechselt strikt zwischen Motorboot (0) und Hubschrauber (1)
             const perspectiveType = (Math.floor(mapVisits / mapTarget) % 2);
             
-            // Reines Oberflächenbild von einem Boot aus gesehen
-            const boatImage = "https://images.unsplash.com/photo-1608037521244-f1265902fa02?auto=format&fit=crop&w=500&q=80"; 
-            // Reines Oberflächenbild aus der Luft (Hubschrauber/Drohne)
-            const helicopterImage = "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=500&q=80"; 
+            // 1. Motorboot-Perspektive: Nahaufnahme an der Oberfläche (Schildkröte streckt den Kopf heraus)
+            const boatImage = "https://images.unsplash.com/photo-1591025207163-942350e47db2?auto=format&fit=crop&w=600&q=80";
+            
+            // 2. Hubschrauber-Perspektive: Luftaufnahme von oben auf die Wasseroberfläche
+            const helicopterImage = "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?auto=format&fit=crop&w=600&q=80";
 
             const currentImage = (perspectiveType === 0) ? boatImage : helicopterImage;
             const perspectiveLabel = (perspectiveType === 0) ? "🚤 Nahaufnahme (Motorboot)" : "🚁 Luftaufnahme (Hubschrauber)";
 
             popupHTML = `
-                <div style="text-align: center; max-width: 200px;">
+                <div style="text-align: center; max-width: 210px;">
                     <div style="font-size: 0.75rem; font-weight: bold; color: var(--accent-cyan); margin-bottom: 4px;">${perspectiveLabel}</div>
-                    <img src="${currentImage}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.2);">
+                    <img src="${currentImage}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.2);">
                     <span style="font-size: 0.8rem; color: #fff;">Maya beim Luftholen an der Wasseroberfläche</span>
                 </div>
             `;
