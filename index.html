@@ -189,12 +189,12 @@
 
         const profileImages = [
             "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?auto=format&fit=crop&w=400&q=80",
-            "https://images.unsplash.com/photo-1591025207163-942350e47db2?auto=format&fit=crop&w=400&q=80"
+            "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=400&q=80"
         ];
 
         const profileImgElement = document.getElementById('turtle-img');
         if (profileVisits >= profileTarget) {
-            const nextImgIndex = Math.floor(Math.random() * profileImages.length);
+            const nextImgIndex = profileVisits % profileImages.length;
             profileImgElement.src = profileImages[nextImgIndex];
             profileVisits = 0;
             profileTarget = Math.floor(Math.random() * 5) + 8;
@@ -202,12 +202,22 @@
         localStorage.setItem('turtle_profile_visits', profileVisits);
         localStorage.setItem('turtle_profile_target', profileTarget);
 
-        // 2. KARTEN-POPUP-LOGIK (Alle 12 bis 15 Aufrufe)
+        // 2. KARTEN-POPUP-LOGIK (Wechselt strikt alle 12 bis 15 Aufrufe)
         let mapVisits = parseInt(localStorage.getItem('turtle_map_visits')) || 0;
         let mapTarget = parseInt(localStorage.getItem('turtle_map_target')) || (Math.floor(Math.random() * 4) + 12);
+        let perspectiveState = parseInt(localStorage.getItem('turtle_persp_state')) || 0;
+
         mapVisits += 1;
+
+        if (mapVisits >= mapTarget) {
+            mapVisits = 0;
+            perspectiveState = (perspectiveState === 0) ? 1 : 0; // Striktes Umschalten 0 <-> 1
+            mapTarget = Math.floor(Math.random() * 4) + 12;
+        }
+
         localStorage.setItem('turtle_map_visits', mapVisits);
         localStorage.setItem('turtle_map_target', mapTarget);
+        localStorage.setItem('turtle_persp_state', perspectiveState);
 
         // 3. DYNAMISCHE METRIKEN & ROUTE
         let currentProgress = parseFloat(localStorage.getItem('turtle_progress')) || 0.2;
@@ -317,33 +327,83 @@
 
         const turtleMarker = L.marker(currentPos, { icon: turtleIcon }).addTo(map);
 
-        // POPUP MIT GEPRÜFTEN BILDERN DER WASSEROBERFLÄCHE
-        let popupHTML = `<b>Maya ist hier!</b><br><span style="font-size: 0.8em; color: #aaa;">Status: Aktiv an der Oberfläche</span>`;
+        // 4. GENERATION VON NATIVEN GRAFIKEN (Perspektiven-Garantie ohne Unterwasserbilder)
+        function createPerspectiveGraphic(mode) {
+            const cvs = document.createElement('canvas');
+            cvs.width = 400;
+            cvs.height = 240;
+            const ctx = cvs.getContext('2d');
 
-        if (mapVisits >= mapTarget) {
-            // Wechselt strikt zwischen Motorboot (0) und Hubschrauber (1)
-            const perspectiveType = (Math.floor(mapVisits / mapTarget) % 2);
-            
-            // 1. Motorboot-Perspektive: Nahaufnahme an der Oberfläche (Schildkröte streckt den Kopf heraus)
-            const boatImage = "https://images.unsplash.com/photo-1591025207163-942350e47db2?auto=format&fit=crop&w=600&q=80";
-            
-            // 2. Hubschrauber-Perspektive: Luftaufnahme von oben auf die Wasseroberfläche
-            const helicopterImage = "https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?auto=format&fit=crop&w=600&q=80";
+            if (mode === 1) {
+                // 🚁 HUBSCHRAUBER / LUFTAUFNAHME (Vogelperspektive von oben auf das türkise Meer)
+                const grad = ctx.createRadialGradient(200, 120, 10, 200, 120, 220);
+                grad.addColorStop(0, '#00b4d8');
+                grad.addColorStop(1, '#0077b6');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 400, 240);
 
-            const currentImage = (perspectiveType === 0) ? boatImage : helicopterImage;
-            const perspectiveLabel = (perspectiveType === 0) ? "🚤 Nahaufnahme (Motorboot)" : "🚁 Luftaufnahme (Hubschrauber)";
+                // Wellenringe (Perspektive von oben)
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 2;
+                ctx.beginPath(); ctx.arc(200, 120, 45, 0, Math.PI*2); ctx.stroke();
+                ctx.beginPath(); ctx.arc(200, 120, 70, 0, Math.PI*2); ctx.stroke();
 
-            popupHTML = `
-                <div style="text-align: center; max-width: 210px;">
-                    <div style="font-size: 0.75rem; font-weight: bold; color: var(--accent-cyan); margin-bottom: 4px;">${perspectiveLabel}</div>
-                    <img src="${currentImage}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.2);">
-                    <span style="font-size: 0.8rem; color: #fff;">Maya beim Luftholen an der Wasseroberfläche</span>
-                </div>
-            `;
+                // Schildkröte Draufsicht
+                ctx.fillStyle = '#2b9348';
+                // Panzer (Oval von oben)
+                ctx.beginPath(); ctx.ellipse(200, 120, 32, 42, 0, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#e9c46a'; ctx.lineWidth = 3; ctx.stroke();
+                // Kopf
+                ctx.beginPath(); ctx.arc(200, 70, 12, 0, Math.PI*2); ctx.fill();
+                // 4 Flossen/Paddel
+                ctx.beginPath(); ctx.ellipse(165, 95, 20, 8, -0.6, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(235, 95, 20, 8, 0.6, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(175, 150, 14, 6, 0.4, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(225, 150, 14, 6, -0.4, 0, Math.PI*2); ctx.fill();
+            } else {
+                // 🚤 MOTORBOOT NAHAUFNAHME (Seitenansicht an der Wasserlinie)
+                const grad = ctx.createLinearGradient(0, 0, 0, 240);
+                grad.addColorStop(0, '#90e0ef');
+                grad.addColorStop(0.5, '#0096c7');
+                grad.addColorStop(1, '#03045e');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 400, 240);
 
-            localStorage.setItem('turtle_map_visits', 0);
-            localStorage.setItem('turtle_map_target', Math.floor(Math.random() * 4) + 12);
+                // Wasserlinie & Bugwelle vom Boot
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.beginPath();
+                ctx.moveTo(0, 110);
+                ctx.quadraticCurveTo(100, 95, 200, 110);
+                ctx.quadraticCurveTo(300, 125, 400, 110);
+                ctx.lineTo(400, 130); ctx.lineTo(0, 130); ctx.fill();
+
+                // Motorboot-Bug oben rechts angedeutet
+                ctx.fillStyle = '#e63946';
+                ctx.beginPath(); ctx.moveTo(320, 20); ctx.lineTo(400, 80); ctx.lineTo(400, 20); ctx.fill();
+
+                // Schildkröte streckt Kopf an der Wasserlinie heraus
+                ctx.fillStyle = '#52b788';
+                // Kopf oben an der Wasserlinie
+                ctx.beginPath(); ctx.arc(140, 100, 16, 0, Math.PI*2); ctx.fill();
+                // Panzer schräg im Wasser
+                ctx.beginPath(); ctx.ellipse(100, 135, 45, 28, -0.3, 0, Math.PI*2); ctx.fill();
+                ctx.strokeStyle = '#d8f3dc'; ctx.lineWidth = 2; ctx.stroke();
+            }
+
+            return cvs.toDataURL();
         }
+
+        // Pop-Up mit dynamischer Grafik setzen
+        const currentGraphic = createPerspectiveGraphic(perspectiveState);
+        const perspectiveLabel = (perspectiveState === 1) ? "🚁 Luftaufnahme (Hubschrauber)" : "🚤 Nahaufnahme (Motorboot)";
+
+        const popupHTML = `
+            <div style="text-align: center; width: 210px;">
+                <div style="font-size: 0.75rem; font-weight: bold; color: var(--accent-cyan); margin-bottom: 4px;">${perspectiveLabel}</div>
+                <img src="${currentGraphic}" style="width: 100%; height: 125px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.2);">
+                <span style="font-size: 0.8rem; color: #fff;">Maya beim Luftholen an der Wasseroberfläche</span>
+            </div>
+        `;
 
         turtleMarker.bindPopup(popupHTML).openPopup();
 
