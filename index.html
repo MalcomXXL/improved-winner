@@ -316,16 +316,16 @@
             // Perspektiven wechseln (Wechsel zwischen Wasser & Hubschrauber/Luftbild)
             const photoToggle = (Math.floor(visits / targetThreshold) % 2 === 0);
             
-            const boatImage = "https://www.stiftung-meeresschutz.org/wp-content/uploads/projekte-tierarten/meeresschildkroeten/karettschildkroeten/echte-karettschildkroete-mit-tauchern-pexels-leonardo-lamas-25-400x267px.jpg?auto=format&fit=crop&w=500&q=80"; // Perspektive vom Boot aus
-            const helicopterImage = "https://stockcake.com/de/i/schildkr%C3%B6te-im-ozean_1467993_592532?auto=format&fit=crop&w=500&q=80"; // Perspektive von oben (Helikopter/Drohne)
-            const baotImage2 = "https://www.stiftung-meeresschutz.org/wp-content/uploads/projekte-tierarten/meeresschildkroeten/karettschildkroeten/freilassung-einer-besenderten-unechten-karettschildkroete-barbara-schroeder-noaa-60-400x267px.jpg"
-            
+            // KORREKTUR: Direkte Bild-URLs verwenden, die auf Parameter reagieren können
+            const boatImage = "https://unsplash.com"; // Meeresschildkröte mit Tauchern
+            const helicopterImage = "https://unsplash.com"; // Schildkröte von oben im Ozean
+
             const currentImage = photoToggle ? boatImage : helicopterImage;
             const perspectiveLabel = photoToggle ? "Live-Sichtung" : "Live-Sichtung (Tauchgang)";
 
             popupHTML = `
                 <div style="text-align: center; max-width: 200px;">
-                    <div style="font-size: 0.75rem; font-weight: bold; color: var(--accent-cyan); margin-bottom: 4px;">${perspectiveLabel}</div>
+                    <div style="font-size: 0.75rem; font-weight: bold; color: cyan; margin-bottom: 4px;">${perspectiveLabel}</div>
                     <img src="${currentImage}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 8px; margin-bottom: 6px; border: 1px solid rgba(255,255,255,0.2);">
                     <span style="font-size: 0.8rem; color: #fff;">Maya gesichtet!</span>
                 </div>
